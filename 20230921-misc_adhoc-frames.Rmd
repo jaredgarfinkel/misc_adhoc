@@ -1,0 +1,89 @@
+---
+title: "20230921-misc_adhoc-frames"
+author: "Jared Garfinkel"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(viridis)
+library(gridExtra)
+knitr::opts_chunk$set(
+	echo = FALSE,
+	warning = FALSE,
+	message = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+### Purpose
+
+We are counting the number of photos we need to fit our frames. Some frames are single photos, while others are collages. Frames that are collage have more than 1 photo attached. A collage may have 2, 3, 4, or 5 photos each. To better organize our photos, I have created the following tables.
+
+```{r}
+df = readxl::read_xlsx("./data/frames.xlsx", sheet= "Sheet1") |> 
+  janitor::clean_names() |> 
+  mutate(collage_id = na_if(collage_id, "NA"))
+```
+
+### Photos
+
+The following is how many photos of each kind there will be. Get more photos than you need in each category so that there are options in each of the 5 sizes. As you can see, there are 34 total pictures required to fit the frames. Since there are 5 sizes, by observation it may make sense to add 5 photos of each size for a set of about 59 prints. Alternatively, doubling the number of photos in each size of frames would be suitable for a set of about 68 prints.
+
+```{r}
+df |> 
+  group_by(size_in_x_in) |> 
+  summarize(number_of_prints = sum(number_of_photos),
+            "n+1" = number_of_prints + 1,
+            "n+2" = number_of_prints + 2,
+            "n+3" = number_of_prints + 3,
+            "n+4" = number_of_prints + 4,
+            "n+5" = number_of_prints + 5,
+            "2n" = number_of_prints * 2) |> 
+  janitor::adorn_totals(name = "Totals") |> 
+  knitr::kable()
+```
+
+### Collages
+
+Since collages can have more than 1 frame attached, some collages have more than 1 size of frame. In other words, multiple sizes of photos may be attached by a collage. To help visualize this, I have included an I.D. variable called "collage_id". This represents the unique collage. As you can see, there are 2 collages with 2 photos, and 1 collage each with 3, 4, and 5 photos. The rest are single photo frames.
+
+```{r}
+df |> 
+  group_by(collage_id) |> 
+  filter(!is.na(collage_id)) |> 
+  summarize(number_of_attached_photos = sum(number_of_photos)) |> 
+  knitr::kable()
+```
+
+Furthermore, it may be desirable to know which size frames fit each collage. As you can see, collage frames 101 and 102 have 2 and 3 size photos, respectively, in a collage. In other words, 2 different size frames are attached by collage frame 101 and 3 different size frames are attached by collage frame 102. For example, frame 101 has 1-3.5 inch x 4 inch and 2-2 inch x 3 inch size photos, while frame 102 has 1-5 inch x 5 inch, 2-2 inch x 3 inch, and 2-3.5 inch x 4 inch photos. Please see below for further details.
+
+```{r}
+df |> 
+  arrange(collage_id) |> 
+  filter(!is.na(collage_id)) |> 
+  knitr::kable()
+```
+
+### Singles
+
+On ther other hand, some frames only have one picture!
+
+```{r}
+df |> 
+  filter(is.na(collage_id)) |> 
+  arrange(size_in_x_in) |> 
+  knitr::kable()
+```
+
+### I hope this helps!
